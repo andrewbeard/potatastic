@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     apk --no-cache -U upgrade && \
     apk add --no-cache uv && \
-    uv sync --locked --compile --link-mode=copy && \
+    uv sync --locked --compile --link-mode=copy --no-dev && \
     apk --no-cache del uv
 
 USER potatastic
