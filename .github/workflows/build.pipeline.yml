@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install uv
-          uv sync -group test
+          uv sync --group test
       - name: Run tests
         run: uv run pytest
   docker:
