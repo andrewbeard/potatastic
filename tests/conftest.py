@@ -3,7 +3,6 @@ Shared test configuration and fixtures for potatastic tests.
 """
 
 import asyncio
-from datetime import datetime
 from unittest.mock import Mock
 
 import pytest

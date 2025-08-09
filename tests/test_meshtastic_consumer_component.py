@@ -1,9 +1,8 @@
 from contextlib import suppress
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from meshage.config import MQTTConfig
-from meshage.messages import MeshtasticNodeInfoMessage, MeshtasticTextMessage
 
 from src.MeshtasticConsumerComponent import (MeshtasticConsumerComponent,
                                              publish_task)

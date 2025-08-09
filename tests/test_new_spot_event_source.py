@@ -1,5 +1,5 @@
 import pytest
-from asphalt.core import Event, Signal
+from asphalt.core import Signal
 
 from src.NewSpotEventSource import NewSpotEventSource
 
@@ -29,7 +29,6 @@ class TestNewSpotEventSource:
     async def test_signal_wait_event(self):
         """Test that the signal can be waited on."""
         import asyncio
-        from unittest.mock import patch
 
         event_source = NewSpotEventSource()
 
