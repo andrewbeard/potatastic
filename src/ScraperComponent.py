@@ -4,8 +4,8 @@ import anyio
 import requests
 from asphalt.core import Component, current_context, run_application
 
-from NewSpotEventSource import NewSpotEventSource
-from Spot import Spot
+from .NewSpotEventSource import NewSpotEventSource
+from .Spot import Spot
 
 
 class ScraperComponent(Component):

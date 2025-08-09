@@ -6,8 +6,8 @@ from asphalt.core import Component, current_context
 from meshage.config import MQTTConfig
 from meshage.messages import MeshtasticNodeInfoMessage, MeshtasticTextMessage
 
-from NewSpotEventSource import NewSpotEventSource
-from Spot import Spot
+from .NewSpotEventSource import NewSpotEventSource
+from .Spot import Spot
 
 
 async def publish_task() -> None:
