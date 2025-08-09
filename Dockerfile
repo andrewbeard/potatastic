@@ -1,15 +1,10 @@
 FROM python:3.13-alpine AS base
 
 ENV PYTHONUNBUFFERED=1
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1
-ENV PIP_NO_CACHE_DIR=1
-ENV PIP_ROOT_USER_ACTION=ignore
-ENV PYTHONDONTWRITEBYTECODE=1
 ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
 
 RUN adduser --gecos "" --disabled-password -s /sbin/nologin --home /tmp --uid 1000 potatastic && \
     mkdir -p /app
-RUN mkdir -p /app
 WORKDIR /app
 COPY src /app/src
 
