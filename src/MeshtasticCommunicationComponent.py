@@ -52,10 +52,7 @@ class MeshtasticCommunicationComponent(Component):
                 await broker.publish(config.publish_topic, payload=bytes(node_info))
                 logging.debug("Published node info")
             except Exception:
-                logging.exception(f"Error publishing node info")
-            else:
-                logging.debug("Published node info")
-
+                logging.exception("Error publishing node info")
             try:
                 logging.debug("Waiting for spot events")
 
