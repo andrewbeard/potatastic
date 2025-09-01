@@ -14,9 +14,6 @@ from .Spot import Spot
 
 async def publish_task() -> None:
     logging.info("Starting publish task")
-    new_spots = await current_context().request_resource(list[Spot], "new_spots")
-    assert new_spots is not None
-
     event_source = await current_context().request_resource(
         NewSpotEventSource, "new_spot_event_source"
     )
@@ -34,27 +31,29 @@ async def publish_task() -> None:
         try:
             await broker.publish(config.publish_topic, payload=bytes(node_info))
             logging.debug("Published node info")
-        except Exception as e:
-            logging.error(f"Error publishing node info: {e}")
+        except Exception:
+            logging.exception(f"Error publishing node info")
         else:
             logging.debug("Published node info")
 
-        while True:
-            try:
-                logging.debug("Waiting for new spot event")
-                await event_source.signal.wait_event()
-                logging.debug(f"Publishing {len(new_spots)} new spots")
-                for spot in new_spots:
-                    message = MeshtasticTextMessage(str(spot), config)
-                    await broker.publish(config.publish_topic, payload=bytes(message))
-            except Exception as e:
-                logging.error(f"Error in publish task: {e}")
+        try:
+            logging.debug("Waiting for spot events")
+
+            async for event in event_source.signal.stream_events():
+                logging.debug(f"Publishing new spot: {event.spot.key}")
+                message = MeshtasticTextMessage(str(event.spot), config)
+                await broker.publish(config.publish_topic, payload=bytes(message))
+        except Exception:
+            logging.exception(f"Error in publish task")
 
 
 async def receive_task() -> None:
     logging.info("Starting receive task")
     config = await current_context().request_resource(MQTTConfig)
     assert config is not None
+
+    received_message_event_source = await current_context().request_resource(ReceivedMessageEventSource, "received_message_event_source")
+    assert received_message_event_source is not None
 
     logging.debug(f"Receive connecting to {config.config["host"]}")
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
@@ -66,6 +65,8 @@ async def receive_task() -> None:
             parsed_message = parser.parse_message(message.payload)
             if isinstance(parsed_message, MeshtasticTextMessage):
                 logging.info(f"Received text message: {parsed_message.text}")
+            if parsed_message:
+                received_message_event_source.signal.dispatch(parsed_message)
 
 
 class MeshtasticCommunicationComponent(Component):
@@ -75,6 +76,7 @@ class MeshtasticCommunicationComponent(Component):
 
     async def start(self, ctx) -> None:
         ctx.add_resource(MQTTConfig())
+        ctx.add_resource(ReceivedMessageEventSource(), name="received_message_event_source")
 
         self.task_group = anyio.create_task_group()
         await self.task_group.__aenter__()
