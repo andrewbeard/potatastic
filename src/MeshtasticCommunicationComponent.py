@@ -32,12 +32,26 @@ async def publish_task() -> None:
         else:
             logging.debug("Published node info")
 
-        while True:
-            await event_source.signal.wait_event()
-            logging.debug(f"Publishing {len(new_spots)} new spots")
-            for spot in new_spots:
-                message = MeshtasticTextMessage(str(spot), config)
-                await broker.publish(config.publish_topic, payload=bytes(message))
+        # Get the component instance to check running flag
+        component = None
+        for comp in current_context().components:
+            if isinstance(comp, MeshtasticCommunicationComponent):
+                component = comp
+                break
+
+        while component and component.running:
+            try:
+                await event_source.signal.wait_event()
+                if not component.running:
+                    break
+                logging.debug(f"Publishing {len(new_spots)} new spots")
+                for spot in new_spots:
+                    message = MeshtasticTextMessage(str(spot), config)
+                    await broker.publish(config.publish_topic, payload=bytes(message))
+            except Exception as e:
+                logging.error(f"Error in publish task: {e}")
+                if not component.running:
+                    break
 
 
 async def receive_task() -> None:
@@ -48,22 +62,36 @@ async def receive_task() -> None:
         ReceivedMessageEventSource(), name="received_message_event_source"
     )
 
+    # Get the component instance to check running flag
+    component = None
+    for comp in current_context().components:
+        if isinstance(comp, MeshtasticCommunicationComponent):
+            component = comp
+            break
+
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
         await broker.subscribe(config.receive_topic)
         async for message in broker.messages:
+            if not component or not component.running:
+                break
             logging.debug(f"Received message: {message}")
 
 
 class MeshtasticCommunicationComponent(Component):
     def __init__(self):
-        pass
+        self.task_group = None
+        self.running = False
 
     async def start(self, ctx) -> None:
         ctx.add_resource(MQTTConfig())
 
-        async with anyio.create_task_group() as task_group:
-            task_group.start_soon(publish_task)
-            task_group.start_soon(receive_task)
+        self.task_group = anyio.create_task_group()
+        await self.task_group.__aenter__()
+        self.running = True
+        self.task_group.start_soon(publish_task)
+        self.task_group.start_soon(receive_task)
 
     async def stop(self) -> None:
-        pass
+        self.running = False
+        if self.task_group:
+            await self.task_group.__aexit__(None, None, None)
