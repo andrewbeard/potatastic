@@ -6,13 +6,14 @@ from asphalt.core import Component, current_context
 from .CommandEventSource import CommandEventSource
 from .State import State
 
+
 class CommandProcessorComponent(Component):
     def __init__(self):
         self.task_group = None
         self.running = False
 
     async def start(self, ctx) -> None:
-        ctx.add_resource(State)
+        ctx.add_resource(State())
         self.task_group = anyio.create_task_group()
         await self.task_group.__aenter__()
         self.running = True
@@ -26,10 +27,11 @@ class CommandProcessorComponent(Component):
     async def task(self) -> None:
         logging.info("Starting command processor task")
         event_source = await current_context().request_resource(
-            CommandEventSource, "command_event_source"
+            CommandEventSource
         )
         assert event_source is not None
 
+        logging.debug("Waiting for command")
         async for event in event_source.signal.stream_events():
             logging.info(f"Received command: {event.command} from {event.userId}")
             await self.parse_command(event.command)
@@ -44,6 +46,6 @@ class CommandProcessorComponent(Component):
             logging.info("Publishing enabled")
         elif parts[0] == "disable":
             state.enabled = False
-            logging.info("Publishing enabled")
+            logging.info("Publishing disabled")
         else:
             logging.warning(f"Unknown command: {command}")

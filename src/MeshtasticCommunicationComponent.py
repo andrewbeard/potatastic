@@ -8,8 +8,7 @@ from meshage.messages import MeshtasticNodeInfoMessage, MeshtasticTextMessage
 from meshage.parser import MeshtasticMessageParser
 
 from .NewSpotEventSource import NewSpotEventSource
-from .ReceivedMessageEventSource import ReceivedMessageEventSource
-from .Spot import Spot
+from .CommandEventSource import CommandEventSource
 
 
 class MeshtasticCommunicationComponent(Component):
@@ -19,7 +18,7 @@ class MeshtasticCommunicationComponent(Component):
 
     async def start(self, ctx) -> None:
         ctx.add_resource(MQTTConfig())
-        ctx.add_resource(ReceivedMessageEventSource(), name="received_message_event_source")
+        ctx.add_resource(CommandEventSource())
 
         self.task_group = anyio.create_task_group()
         await self.task_group.__aenter__()
@@ -34,9 +33,7 @@ class MeshtasticCommunicationComponent(Component):
 
     async def publish_task(self) -> None:
         logging.info("Starting publish task")
-        event_source = await current_context().request_resource(
-            NewSpotEventSource, "new_spot_event_source"
-        )
+        event_source = await current_context().request_resource(NewSpotEventSource)
         assert event_source is not None
         logging.debug(f"Event source: {event_source}")
 
@@ -63,14 +60,15 @@ class MeshtasticCommunicationComponent(Component):
             except Exception:
                 logging.exception(f"Error in publish task")
 
-
     async def receive_task(self) -> None:
         logging.info("Starting receive task")
         config = await current_context().request_resource(MQTTConfig)
         assert config is not None
 
-        received_message_event_source = await current_context().request_resource(ReceivedMessageEventSource, "received_message_event_source")
-        assert received_message_event_source is not None
+        command_event_source = await current_context().request_resource(
+            CommandEventSource
+        )
+        assert command_event_source is not None
 
         logging.debug(f"Receive connecting to {config.config["host"]}")
         async with aiomqtt.Client(**config.aiomqtt_config) as broker:
@@ -80,7 +78,14 @@ class MeshtasticCommunicationComponent(Component):
             logging.debug("Subscribed to receive topic")
             async for message in broker.messages:
                 parsed_message = parser.parse_message(message.payload)
+                if not parsed_message:
+                    continue
                 if isinstance(parsed_message, MeshtasticTextMessage):
-                    logging.info(f"Received text message: {parsed_message.text}")
-                if parsed_message:
-                    await received_message_event_source.signal.dispatch(parsed_message)
+                    logging.info(
+                        f"Received text message: {parsed_message.text} from {parsed_message.sender}"
+                    )
+                    await command_event_source.signal.dispatch(
+                        parsed_message.text, parsed_message.sender
+                    )
+                else:
+                    logging.warning(f"Received unknown message: {parsed_message.type}")

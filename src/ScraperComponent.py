@@ -18,7 +18,7 @@ class ScraperComponent(Component):
         self.running = False
 
     async def start(self, ctx) -> None:
-        ctx.add_resource(NewSpotEventSource(), name="new_spot_event_source")
+        ctx.add_resource(NewSpotEventSource())
         ctx.add_resource({}, name="spots", types=dict[str, Spot])
 
         self.task_group = anyio.create_task_group()
@@ -47,13 +47,13 @@ class ScraperComponent(Component):
     async def task(self) -> None:
         logging.info("Starting scraper task")
         new_spot_event_source = await current_context().request_resource(
-            NewSpotEventSource, "new_spot_event_source"
+            NewSpotEventSource
         )
         assert new_spot_event_source is not None
         spots = await current_context().request_resource(dict[str, Spot], "spots")
         assert spots is not None
-        #state = await current_context().request_resource(State)
-        #assert state is not None
+        state = await current_context().request_resource(State)
+        assert state is not None
 
         while self.running:
             try:
@@ -65,12 +65,11 @@ class ScraperComponent(Component):
                 for spot in scrape:
                     spots[spot.key] = spot
 
-                if True or state.enabled:
+                if state.enabled:
                     for spot in added:
                         await new_spot_event_source.signal.dispatch(spot)
 
             except Exception:
-                logging.exception(f"Error fetching spot reports")
+                logging.exception("Error fetching spot reports")
             finally:
                 await anyio.sleep(self.FETCH_PERIOD)
-
