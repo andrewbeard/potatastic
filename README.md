@@ -1,6 +1,6 @@
 # POTAtastic
 
-Publishes POTA spots to Meshtastic via MQTT. This application uses the meshage library for [Meshtastic](https://github.com/andrewbeard/meshage) message parsing.
+Publishes [POTA](https://parksontheair.com/index.html) spots to Meshtastic via MQTT. This application uses the [meshage](https://github.com/andrewbeard/meshage) library for [Meshtastic](https://meshtastic.org) message parsing. The idea is to use the mesh for last-mile delivery of POTA spotting info to locations that may not have proper cellular coverage but that have Meshtastic coverage.
 
 ## Getting Started
 
