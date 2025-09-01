@@ -86,4 +86,4 @@ class MeshtasticCommunicationComponent(Component):
                 if isinstance(parsed_message, MeshtasticTextMessage):
                     logging.info(f"Received text message: {parsed_message.text}")
                 if parsed_message:
-                    received_message_event_source.signal.dispatch(parsed_message)
+                    await received_message_event_source.signal.dispatch(parsed_message)
