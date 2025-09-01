@@ -131,7 +131,9 @@ class TestPotatastic:
         """Test that all component types used in main can be imported."""
         from asphalt.core import ContainerComponent
 
-        from src.MeshtasticCommunicationComponent import MeshtasticCommunicationComponent
+        from src.MeshtasticCommunicationComponent import (
+            MeshtasticCommunicationComponent,
+        )
         from src.ScraperComponent import ScraperComponent
 
         # These should all be importable without errors
@@ -170,7 +172,9 @@ class TestPotatastic:
 
         from asphalt.core import ContainerComponent, run_application
 
-        from src.MeshtasticCommunicationComponent import MeshtasticCommunicationComponent
+        from src.MeshtasticCommunicationComponent import (
+            MeshtasticCommunicationComponent,
+        )
         from src.ScraperComponent import ScraperComponent
 
         # Verify they're all callable/usable

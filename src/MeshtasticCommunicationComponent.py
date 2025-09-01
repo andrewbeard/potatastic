@@ -12,6 +12,7 @@ from .Spot import Spot
 
 
 async def publish_task() -> None:
+    logging.info("Starting publish task")
     new_spots = await current_context().request_resource(list[Spot], "new_spots")
     assert new_spots is not None
 
@@ -19,62 +20,48 @@ async def publish_task() -> None:
         NewSpotEventSource, "new_spot_event_source"
     )
     assert event_source is not None
+    logging.debug(f"Event source: {event_source}")
 
     config = await current_context().request_resource(MQTTConfig)
     assert config is not None
+    logging.debug(f"Config: {config.config}")
 
+    logging.debug(f"Publish connecting to {config.config["host"]}")
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
+        logging.debug(f"Publish connected to broker")
         node_info = MeshtasticNodeInfoMessage(config)
         try:
             await broker.publish(config.publish_topic, payload=bytes(node_info))
+            logging.debug("Published node info")
         except Exception as e:
             logging.error(f"Error publishing node info: {e}")
         else:
             logging.debug("Published node info")
 
-        # Get the component instance to check running flag
-        component = None
-        for comp in current_context().components:
-            if isinstance(comp, MeshtasticCommunicationComponent):
-                component = comp
-                break
-
-        while component and component.running:
+        while True:
             try:
+                logging.debug("Waiting for new spot event")
                 await event_source.signal.wait_event()
-                if not component.running:
-                    break
                 logging.debug(f"Publishing {len(new_spots)} new spots")
                 for spot in new_spots:
                     message = MeshtasticTextMessage(str(spot), config)
                     await broker.publish(config.publish_topic, payload=bytes(message))
             except Exception as e:
                 logging.error(f"Error in publish task: {e}")
-                if not component.running:
-                    break
 
 
 async def receive_task() -> None:
+    logging.info("Starting receive task")
     config = await current_context().request_resource(MQTTConfig)
     assert config is not None
 
-    current_context().add_resource(
-        ReceivedMessageEventSource(), name="received_message_event_source"
-    )
-
-    # Get the component instance to check running flag
-    component = None
-    for comp in current_context().components:
-        if isinstance(comp, MeshtasticCommunicationComponent):
-            component = comp
-            break
-
+    logging.debug(f"Receive connecting to {config.config["host"]}")
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
+        logging.debug(f"Receive connected to broker")
         await broker.subscribe(config.receive_topic)
+        logging.debug("Subscribed to receive topic")
         async for message in broker.messages:
-            if not component or not component.running:
-                break
-            logging.debug(f"Received message: {message}")
+            logging.debug(f"Received message: {message.payload}")
 
 
 class MeshtasticCommunicationComponent(Component):

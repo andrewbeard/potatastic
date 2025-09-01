@@ -4,7 +4,11 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from meshage.config import MQTTConfig
 
-from src.MeshtasticCommunicationComponent import MeshtasticCommunicationComponent, publish_task, receive_task
+from src.MeshtasticCommunicationComponent import (
+    MeshtasticCommunicationComponent,
+    publish_task,
+    receive_task,
+)
 from src.NewSpotEventSource import NewSpotEventSource
 from src.Spot import Spot
 
@@ -29,8 +33,12 @@ class TestMeshtasticCommunicationComponent:
             # Make start_soon a regular mock to avoid coroutine warnings
             mock_task_group.start_soon = Mock()
             # Set up the context manager to return the mock task group
-            mock_task_group_factory.return_value.__aenter__ = AsyncMock(return_value=mock_task_group)
-            mock_task_group_factory.return_value.__aexit__ = AsyncMock(return_value=None)
+            mock_task_group_factory.return_value.__aenter__ = AsyncMock(
+                return_value=mock_task_group
+            )
+            mock_task_group_factory.return_value.__aexit__ = AsyncMock(
+                return_value=None
+            )
 
             await consumer.start(mock_ctx)
 
@@ -51,7 +59,7 @@ class TestMeshtasticCommunicationComponent:
     async def test_stop_method(self):
         """Test that stop method properly cleans up."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         # The stop method is now just pass, so it should not raise an exception
         await consumer.stop()
 
@@ -59,7 +67,7 @@ class TestMeshtasticCommunicationComponent:
     async def test_stop_method_no_task_group(self):
         """Test that stop method handles case when task_group is None."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         # The stop method is now just pass, so it should not raise an exception
         await consumer.stop()
 
@@ -85,7 +93,9 @@ class TestPublishTask:
     @pytest.mark.asyncio
     async def test_publish_task_initialization_error(self):
         """Test publish_task when resources are not available."""
-        with patch("src.MeshtasticCommunicationComponent.current_context") as mock_context:
+        with patch(
+            "src.MeshtasticCommunicationComponent.current_context"
+        ) as mock_context:
             mock_ctx = AsyncMock()
             mock_ctx.request_resource.return_value = None
             mock_context.return_value = mock_ctx
@@ -96,7 +106,9 @@ class TestPublishTask:
     @pytest.mark.asyncio
     async def test_publish_task_mqtt_config_error(self):
         """Test publish_task when MQTT config is not available."""
-        with patch("src.MeshtasticCommunicationComponent.current_context") as mock_context:
+        with patch(
+            "src.MeshtasticCommunicationComponent.current_context"
+        ) as mock_context:
             mock_ctx = AsyncMock()
 
             # Return valid resources for spots and event source, but None for config
@@ -119,7 +131,9 @@ class TestPublishTask:
     async def test_publish_task_node_info_publish_error(self, sample_spots):
         """Test publish_task when node info publishing fails."""
         with (
-            patch("src.MeshtasticCommunicationComponent.current_context") as mock_context,
+            patch(
+                "src.MeshtasticCommunicationComponent.current_context"
+            ) as mock_context,
             patch(
                 "src.MeshtasticCommunicationComponent.aiomqtt.Client"
             ) as mock_client_class,
@@ -185,7 +199,9 @@ class TestPublishTask:
     async def test_publish_task_successful_flow(self, sample_spots):
         """Test successful publish_task flow with mocked components."""
         with (
-            patch("src.MeshtasticCommunicationComponent.current_context") as mock_context,
+            patch(
+                "src.MeshtasticCommunicationComponent.current_context"
+            ) as mock_context,
             patch(
                 "src.MeshtasticCommunicationComponent.aiomqtt.Client"
             ) as mock_client_class,

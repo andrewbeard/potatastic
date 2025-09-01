@@ -16,7 +16,7 @@ def main():
         ContainerComponent(
             {
                 "scraper": {"type": ScraperComponent},
-                "consumer": {"type": MeshtasticCommunicationComponent},
+                "mqtt": {"type": MeshtasticCommunicationComponent},
             }
         )
     )
