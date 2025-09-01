@@ -42,15 +42,19 @@ class TestMeshtasticCommunicationComponent:
             args = mock_ctx.add_resource.call_args_list
             # Check that MQTTConfig and ReceivedMessageEventSource are added
             resource_types = [call[0][0].__class__ for call in args]
-            assert MQTTConfig in [rt for rt in resource_types if hasattr(rt, '__name__') and rt.__name__ == 'MQTTConfig']
+            assert MQTTConfig in [
+                rt
+                for rt in resource_types
+                if hasattr(rt, "__name__") and rt.__name__ == "MQTTConfig"
+            ]
 
             # Verify task group is created and both tasks are scheduled
             mock_task_group_factory.assert_called_once()
             assert mock_task_group.start_soon.call_count == 2
             # Check that both publish_task and receive_task methods are called
             calls = mock_task_group.start_soon.call_args_list
-            assert any('publish_task' in str(call[0][0]) for call in calls)
-            assert any('receive_task' in str(call[0][0]) for call in calls)
+            assert any("publish_task" in str(call[0][0]) for call in calls)
+            assert any("receive_task" in str(call[0][0]) for call in calls)
 
     @pytest.mark.asyncio
     async def test_stop_method(self):
@@ -96,7 +100,7 @@ class TestPublishTask:
     async def test_publish_task_initialization_error(self):
         """Test publish_task when resources are not available."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with patch(
             "src.MeshtasticCommunicationComponent.current_context"
         ) as mock_context:
@@ -111,7 +115,7 @@ class TestPublishTask:
     async def test_publish_task_mqtt_config_error(self):
         """Test publish_task when MQTT config is not available."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with patch(
             "src.MeshtasticCommunicationComponent.current_context"
         ) as mock_context:
@@ -135,7 +139,7 @@ class TestPublishTask:
     async def test_publish_task_node_info_publish_error(self, sample_spots):
         """Test publish_task when node info publishing fails."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with (
             patch(
                 "src.MeshtasticCommunicationComponent.current_context"
@@ -199,7 +203,7 @@ class TestPublishTask:
     async def test_publish_task_successful_flow(self, sample_spots):
         """Test successful publish_task flow with mocked components."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with (
             patch(
                 "src.MeshtasticCommunicationComponent.current_context"
@@ -245,6 +249,7 @@ class TestPublishTask:
                 raise Exception("Test stop")
 
             from unittest.mock import Mock as _StdMock
+
             mock_signal.stream_events = _StdMock(return_value=mock_stream_events())
 
             # Mock the message classes
@@ -282,7 +287,7 @@ class TestReceiveTask:
     async def test_receive_task_initialization_error(self):
         """Test receive_task when MQTT config is not available."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with patch(
             "src.MeshtasticCommunicationComponent.current_context"
         ) as mock_context:
@@ -297,7 +302,7 @@ class TestReceiveTask:
     async def test_receive_task_event_source_error(self):
         """Test receive_task when event source is not available."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with patch(
             "src.MeshtasticCommunicationComponent.current_context"
         ) as mock_context:
@@ -323,7 +328,7 @@ class TestReceiveTask:
     async def test_receive_task_successful_flow(self):
         """Test successful receive_task flow with mocked components."""
         consumer = MeshtasticCommunicationComponent()
-        
+
         with (
             patch(
                 "src.MeshtasticCommunicationComponent.current_context"

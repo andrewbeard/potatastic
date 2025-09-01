@@ -21,9 +21,10 @@ class TestNewSpotEventSource:
     async def test_signal_dispatch(self):
         """Test that the signal can be dispatched."""
         event_source = NewSpotEventSource()
-        
+
         # Create a mock spot for testing
         from src.Spot import Spot
+
         mock_spot_data = {
             "activator": "W1ABC",
             "frequency": "14.230",
@@ -46,9 +47,10 @@ class TestNewSpotEventSource:
         import asyncio
 
         event_source = NewSpotEventSource()
-        
+
         # Create a mock spot for testing
         from src.Spot import Spot
+
         mock_spot_data = {
             "activator": "W1ABC",
             "frequency": "14.230",
