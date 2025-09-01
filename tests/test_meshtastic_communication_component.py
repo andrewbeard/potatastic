@@ -8,6 +8,7 @@ from src.MeshtasticCommunicationComponent import (
     MeshtasticCommunicationComponent,
 )
 from src.NewSpotEventSource import NewSpotEventSource
+from src.CommandEventSource import CommandEventSource
 from src.Spot import Spot
 
 
@@ -123,7 +124,7 @@ class TestPublishTask:
 
             # Return valid resources for spots and event source, but None for config
             def mock_request_resource(resource_type, name=None):
-                if name == "new_spot_event_source":
+                if resource_type == NewSpotEventSource:
                     return NewSpotEventSource()
                 elif resource_type == MQTTConfig:
                     return None
@@ -156,7 +157,7 @@ class TestPublishTask:
             mock_config.publish_topic = "test/topic"
 
             def mock_request_resource(resource_type, name=None):
-                if name == "new_spot_event_source":
+                if resource_type == NewSpotEventSource:
                     return NewSpotEventSource()
                 elif resource_type == MQTTConfig:
                     return mock_config
@@ -189,7 +190,7 @@ class TestPublishTask:
                     ):
                         mock_ctx.request_resource.side_effect = lambda rt, name=None: (
                             event_source
-                            if name == "new_spot_event_source"
+                            if rt == NewSpotEventSource
                             else mock_config if rt == MQTTConfig else None
                         )
 
@@ -226,7 +227,7 @@ class TestPublishTask:
             mock_event_source.signal = mock_signal
 
             def mock_request_resource(resource_type, name=None):
-                if name == "new_spot_event_source":
+                if resource_type == NewSpotEventSource:
                     return mock_event_source
                 elif resource_type == MQTTConfig:
                     return mock_config
@@ -351,8 +352,8 @@ class TestReceiveTask:
             mock_event_source.signal = mock_signal
 
             def mock_request_resource(resource_type, name=None):
-                if name == "received_message_event_source":
-                    return mock_event_source
+                if resource_type == CommandEventSource:
+                    return CommandEventSource()
                 elif resource_type == MQTTConfig:
                     return mock_config
                 return None
