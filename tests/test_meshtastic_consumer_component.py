@@ -4,23 +4,22 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from meshage.config import MQTTConfig
 
-from src.MeshtasticConsumerComponent import (MeshtasticConsumerComponent,
-                                             publish_task)
+from src.MeshtasticConsumerComponent import MeshtasticCommunicationComponent, publish_task, receive_task
 from src.NewSpotEventSource import NewSpotEventSource
 from src.Spot import Spot
 
 
-class TestMeshtasticConsumerComponent:
-    def test_meshtastic_consumer_component_initialization(self):
-        """Test that MeshtasticConsumerComponent initializes correctly."""
-        consumer = MeshtasticConsumerComponent()
-        assert consumer.task_group is None
-        assert consumer.running is False
+class TestMeshtasticCommunicationComponent:
+    def test_meshtastic_communication_component_initialization(self):
+        """Test that MeshtasticCommunicationComponent initializes correctly."""
+        consumer = MeshtasticCommunicationComponent()
+        # The component now has no attributes in __init__, just pass
+        assert consumer is not None
 
     @pytest.mark.asyncio
     async def test_start_method(self):
         """Test that start method properly initializes resources."""
-        consumer = MeshtasticConsumerComponent()
+        consumer = MeshtasticCommunicationComponent()
         mock_ctx = Mock()
 
         with patch(
@@ -29,7 +28,9 @@ class TestMeshtasticConsumerComponent:
             mock_task_group = AsyncMock()
             # Make start_soon a regular mock to avoid coroutine warnings
             mock_task_group.start_soon = Mock()
-            mock_task_group_factory.return_value = mock_task_group
+            # Set up the context manager to return the mock task group
+            mock_task_group_factory.return_value.__aenter__ = AsyncMock(return_value=mock_task_group)
+            mock_task_group_factory.return_value.__aexit__ = AsyncMock(return_value=None)
 
             await consumer.start(mock_ctx)
 
@@ -38,34 +39,29 @@ class TestMeshtasticConsumerComponent:
             args = mock_ctx.add_resource.call_args[0]
             assert isinstance(args[0], MQTTConfig)
 
-            # Verify task group is started
-            mock_task_group.__aenter__.assert_called_once()
-            assert consumer.running is True
-            mock_task_group.start_soon.assert_called_once_with(publish_task)
+            # Verify task group is created and both tasks are scheduled
+            mock_task_group_factory.assert_called_once()
+            assert mock_task_group.start_soon.call_count == 2
+            # Check that both publish_task and receive_task are called
+            calls = mock_task_group.start_soon.call_args_list
+            assert any(publish_task in call[0] for call in calls)
+            assert any(receive_task in call[0] for call in calls)
 
     @pytest.mark.asyncio
     async def test_stop_method(self):
         """Test that stop method properly cleans up."""
-        consumer = MeshtasticConsumerComponent()
-        mock_task_group = AsyncMock()
-        consumer.task_group = mock_task_group
-        consumer.running = True
-
+        consumer = MeshtasticCommunicationComponent()
+        
+        # The stop method is now just pass, so it should not raise an exception
         await consumer.stop()
-
-        assert consumer.running is False
-        mock_task_group.__aexit__.assert_called_once_with(None, None, None)
 
     @pytest.mark.asyncio
     async def test_stop_method_no_task_group(self):
         """Test that stop method handles case when task_group is None."""
-        consumer = MeshtasticConsumerComponent()
-        consumer.running = True
-        consumer.task_group = None
-
-        # Should not raise an exception
+        consumer = MeshtasticCommunicationComponent()
+        
+        # The stop method is now just pass, so it should not raise an exception
         await consumer.stop()
-        assert consumer.running is False
 
 
 class TestPublishTask:

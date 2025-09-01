@@ -7,6 +7,7 @@ from meshage.config import MQTTConfig
 from meshage.messages import MeshtasticNodeInfoMessage, MeshtasticTextMessage
 
 from .NewSpotEventSource import NewSpotEventSource
+from .ReceivedMessageEventSource import ReceivedMessageEventSource
 from .Spot import Spot
 
 
@@ -39,20 +40,30 @@ async def publish_task() -> None:
                 await broker.publish(config.topic, payload=bytes(message))
 
 
-class MeshtasticConsumerComponent(Component):
+async def receive_task() -> None:
+    config = await current_context().request_resource(MQTTConfig)
+    assert config is not None
+
+    current_context().add_resource(
+        ReceivedMessageEventSource(), name="received_message_event_source"
+    )
+
+    async with aiomqtt.Client(**config.aiomqtt_config) as broker:
+        await broker.subscribe(config.topic)
+        async for message in broker.messages:
+            logging.debug(f"Received message: {message}")
+
+
+class MeshtasticCommunicationComponent(Component):
     def __init__(self):
-        self.task_group = None
-        self.running = False
+        pass
 
     async def start(self, ctx) -> None:
         ctx.add_resource(MQTTConfig())
 
-        self.task_group = anyio.create_task_group()
-        await self.task_group.__aenter__()
-        self.running = True
-        self.task_group.start_soon(publish_task)
+        async with anyio.create_task_group() as task_group:
+            task_group.start_soon(publish_task)
+            task_group.start_soon(receive_task)
 
     async def stop(self) -> None:
-        self.running = False
-        if self.task_group:
-            await self.task_group.__aexit__(None, None, None)
+        pass

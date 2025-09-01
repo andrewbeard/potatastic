@@ -3,7 +3,7 @@ import logging
 
 from asphalt.core import ContainerComponent, run_application
 
-from .MeshtasticConsumerComponent import MeshtasticConsumerComponent
+from .MeshtasticConsumerComponent import MeshtasticCommunicationComponent
 from .ScraperComponent import ScraperComponent
 
 
@@ -16,7 +16,7 @@ def main():
         ContainerComponent(
             {
                 "scraper": {"type": ScraperComponent},
-                "consumer": {"type": MeshtasticConsumerComponent},
+                "consumer": {"type": MeshtasticCommunicationComponent},
             }
         )
     )

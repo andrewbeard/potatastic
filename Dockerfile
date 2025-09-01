@@ -27,4 +27,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 USER potatastic
 ENV PYTHONOPTIMIZE=1
-CMD ["python", "src/potatastic.py"]
+CMD ["python", "-m", "src.potatastic"]

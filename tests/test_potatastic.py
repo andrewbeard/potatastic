@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.MeshtasticConsumerComponent import MeshtasticConsumerComponent
+from src.MeshtasticConsumerComponent import MeshtasticCommunicationComponent
 from src.potatastic import main
 from src.ScraperComponent import ScraperComponent
 
@@ -116,27 +116,27 @@ class TestPotatastic:
         """Integration test to verify components can be instantiated."""
         # Test that the actual components can be created
         scraper = ScraperComponent()
-        consumer = MeshtasticConsumerComponent()
+        consumer = MeshtasticCommunicationComponent()
 
         assert isinstance(scraper, ScraperComponent)
-        assert isinstance(consumer, MeshtasticConsumerComponent)
+        assert isinstance(consumer, MeshtasticCommunicationComponent)
 
         # Test that they have expected attributes
         assert hasattr(scraper, "SPOT_URL")
         assert hasattr(scraper, "FETCH_PERIOD")
-        assert hasattr(consumer, "task_group")
-        assert hasattr(consumer, "running")
+        # The consumer component no longer has task_group or running attributes
+        assert consumer is not None
 
     def test_component_types_are_importable(self):
         """Test that all component types used in main can be imported."""
         from asphalt.core import ContainerComponent
 
-        from src.MeshtasticConsumerComponent import MeshtasticConsumerComponent
+        from src.MeshtasticConsumerComponent import MeshtasticCommunicationComponent
         from src.ScraperComponent import ScraperComponent
 
         # These should all be importable without errors
         assert ScraperComponent is not None
-        assert MeshtasticConsumerComponent is not None
+        assert MeshtasticCommunicationComponent is not None
         assert ContainerComponent is not None
 
     def test_logging_format_string(self):
@@ -170,7 +170,7 @@ class TestPotatastic:
 
         from asphalt.core import ContainerComponent, run_application
 
-        from src.MeshtasticConsumerComponent import MeshtasticConsumerComponent
+        from src.MeshtasticConsumerComponent import MeshtasticCommunicationComponent
         from src.ScraperComponent import ScraperComponent
 
         # Verify they're all callable/usable
@@ -178,4 +178,4 @@ class TestPotatastic:
         assert callable(run_application)
         assert callable(ContainerComponent)
         assert callable(ScraperComponent)
-        assert callable(MeshtasticConsumerComponent)
+        assert callable(MeshtasticCommunicationComponent)

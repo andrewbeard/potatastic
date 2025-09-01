@@ -9,7 +9,7 @@ requires-python = ">=3.13"
 keywords = ["pota", "meshtastic", "mqtt"]
 dependencies = [
     "aiomqtt>=2.4.0",
-    "anyio>=4.9.0",
+    "anyio>=4.10.0",
     "asphalt>=4.12.0",
     "meshage>=0.1.0",
 ]
