@@ -80,7 +80,8 @@ def mock_mqtt_config():
         "username": "test",
         "password": "test",
     }
-    config.topic = "test/topic"
+    config.publish_topic = "test/topic"
+    config.receive_topic = "test/#"
     return config
 
 

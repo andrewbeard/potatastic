@@ -26,7 +26,7 @@ async def publish_task() -> None:
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
         node_info = MeshtasticNodeInfoMessage(config)
         try:
-            await broker.publish(config.topic, payload=bytes(node_info))
+            await broker.publish(config.publish_topic, payload=bytes(node_info))
         except Exception as e:
             logging.error(f"Error publishing node info: {e}")
         else:
@@ -37,7 +37,7 @@ async def publish_task() -> None:
             logging.debug(f"Publishing {len(new_spots)} new spots")
             for spot in new_spots:
                 message = MeshtasticTextMessage(str(spot), config)
-                await broker.publish(config.topic, payload=bytes(message))
+                await broker.publish(config.publish_topic, payload=bytes(message))
 
 
 async def receive_task() -> None:
@@ -49,7 +49,7 @@ async def receive_task() -> None:
     )
 
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
-        await broker.subscribe(config.topic)
+        await broker.subscribe(config.receive_topic)
         async for message in broker.messages:
             logging.debug(f"Received message: {message}")
 

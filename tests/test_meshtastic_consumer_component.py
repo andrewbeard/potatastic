@@ -129,7 +129,7 @@ class TestPublishTask:
             mock_ctx = AsyncMock()
             mock_config = Mock()
             mock_config.aiomqtt_config = {}
-            mock_config.topic = "test/topic"
+            mock_config.publish_topic = "test/topic"
 
             def mock_request_resource(resource_type, name=None):
                 if name == "new_spots":
@@ -195,7 +195,7 @@ class TestPublishTask:
             mock_ctx = AsyncMock()
             mock_config = Mock()
             mock_config.aiomqtt_config = {}
-            mock_config.topic = "test/topic"
+            mock_config.publish_topic = "test/topic"
 
             # Create a mock event source with controllable signal
             mock_event_source = Mock()
