@@ -306,16 +306,16 @@ wheels = [
 
 [[package]]
 name = "meshage"
-version = "0.2.0"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiomqtt" },
     { name = "cryptography" },
     { name = "meshtastic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/50/0ae89af6a7ca12c5f1684a182f972f4411aa90599c80530aff2562e8dc09/meshage-0.2.0.tar.gz", hash = "sha256:e0941ad22302ab3182dbb47032d7c9e2d07234fb17b872b4bc8340ad16db820e", size = 23457, upload-time = "2025-08-03T19:30:44.142Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/db/25/72d3fd2cacf4437ddfa195955a31f56755f0bee39e83c2d9686dd39671d2/meshage-0.3.0.tar.gz", hash = "sha256:6d2987292c5c88ce457b09e3fac13ebac98ab988c77f7f66e9fdbe970ac73803", size = 23512, upload-time = "2025-09-01T01:10:22.028Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/c4/b779136c6690e4cad392668254df74e44caee8c9a31d0be6e22be8791b97/meshage-0.2.0-py3-none-any.whl", hash = "sha256:cf2ebc3ca9a1b32ba0fab8eb07c8d291faa0d3c253bca1f2100e7e62452ce4eb", size = 16268, upload-time = "2025-08-03T19:30:42.671Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/a3/dd92f1f26f30c3cce111a3da4d81d766f0dc137121318afa225bddb8ec7c/meshage-0.3.0-py3-none-any.whl", hash = "sha256:e5a0df987c45dee0c6cfa0a34ced9d95c667d4060c8ce5612fc98619278facd0", size = 16288, upload-time = "2025-09-01T01:10:20.642Z" },
 ]
 
 [[package]]
@@ -419,7 +419,7 @@ wheels = [
 
 [[package]]
 name = "potatastic"
-version = "0.1.0"
+version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "aiomqtt" },
@@ -446,7 +446,7 @@ requires-dist = [
     { name = "aiomqtt", specifier = ">=2.4.0" },
     { name = "anyio", specifier = ">=4.10.0" },
     { name = "asphalt", specifier = ">=4.12.0" },
-    { name = "meshage", specifier = ">=0.1.0" },
+    { name = "meshage", specifier = ">=0.3.0" },
 ]
 
 [package.metadata.requires-dev]
