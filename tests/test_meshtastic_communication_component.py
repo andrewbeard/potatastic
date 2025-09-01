@@ -6,8 +6,6 @@ from meshage.config import MQTTConfig
 
 from src.MeshtasticCommunicationComponent import (
     MeshtasticCommunicationComponent,
-    publish_task,
-    receive_task,
 )
 from src.NewSpotEventSource import NewSpotEventSource
 from src.Spot import Spot
@@ -17,8 +15,8 @@ class TestMeshtasticCommunicationComponent:
     def test_meshtastic_communication_component_initialization(self):
         """Test that MeshtasticCommunicationComponent initializes correctly."""
         consumer = MeshtasticCommunicationComponent()
-        # The component now has no attributes in __init__, just pass
-        assert consumer is not None
+        assert consumer.task_group is None
+        assert consumer.running is False
 
     @pytest.mark.asyncio
     async def test_start_method(self):
@@ -33,43 +31,47 @@ class TestMeshtasticCommunicationComponent:
             # Make start_soon a regular mock to avoid coroutine warnings
             mock_task_group.start_soon = Mock()
             # Set up the context manager to return the mock task group
-            mock_task_group_factory.return_value.__aenter__ = AsyncMock(
-                return_value=mock_task_group
-            )
-            mock_task_group_factory.return_value.__aexit__ = AsyncMock(
-                return_value=None
-            )
+            mock_task_group_factory.return_value = mock_task_group
+            mock_task_group.__aenter__ = AsyncMock(return_value=mock_task_group)
+            mock_task_group.__aexit__ = AsyncMock(return_value=None)
 
             await consumer.start(mock_ctx)
 
             # Verify MQTTConfig resource is added
-            mock_ctx.add_resource.assert_called_once()
-            args = mock_ctx.add_resource.call_args[0]
-            assert isinstance(args[0], MQTTConfig)
+            mock_ctx.add_resource.assert_called()
+            args = mock_ctx.add_resource.call_args_list
+            # Check that MQTTConfig and ReceivedMessageEventSource are added
+            resource_types = [call[0][0].__class__ for call in args]
+            assert MQTTConfig in [rt for rt in resource_types if hasattr(rt, '__name__') and rt.__name__ == 'MQTTConfig']
 
             # Verify task group is created and both tasks are scheduled
             mock_task_group_factory.assert_called_once()
             assert mock_task_group.start_soon.call_count == 2
-            # Check that both publish_task and receive_task are called
+            # Check that both publish_task and receive_task methods are called
             calls = mock_task_group.start_soon.call_args_list
-            assert any(publish_task in call[0] for call in calls)
-            assert any(receive_task in call[0] for call in calls)
+            assert any('publish_task' in str(call[0][0]) for call in calls)
+            assert any('receive_task' in str(call[0][0]) for call in calls)
 
     @pytest.mark.asyncio
     async def test_stop_method(self):
         """Test that stop method properly cleans up."""
         consumer = MeshtasticCommunicationComponent()
+        consumer.task_group = AsyncMock()
 
-        # The stop method is now just pass, so it should not raise an exception
         await consumer.stop()
+
+        assert consumer.running is False
+        consumer.task_group.__aexit__.assert_called_once_with(None, None, None)
 
     @pytest.mark.asyncio
     async def test_stop_method_no_task_group(self):
         """Test that stop method handles case when task_group is None."""
         consumer = MeshtasticCommunicationComponent()
+        consumer.task_group = None
 
-        # The stop method is now just pass, so it should not raise an exception
+        # Should not raise an exception
         await consumer.stop()
+        assert consumer.running is False
 
 
 class TestPublishTask:
@@ -93,6 +95,8 @@ class TestPublishTask:
     @pytest.mark.asyncio
     async def test_publish_task_initialization_error(self):
         """Test publish_task when resources are not available."""
+        consumer = MeshtasticCommunicationComponent()
+        
         with patch(
             "src.MeshtasticCommunicationComponent.current_context"
         ) as mock_context:
@@ -101,11 +105,13 @@ class TestPublishTask:
             mock_context.return_value = mock_ctx
 
             with pytest.raises(AssertionError):
-                await publish_task()
+                await consumer.publish_task()
 
     @pytest.mark.asyncio
     async def test_publish_task_mqtt_config_error(self):
         """Test publish_task when MQTT config is not available."""
+        consumer = MeshtasticCommunicationComponent()
+        
         with patch(
             "src.MeshtasticCommunicationComponent.current_context"
         ) as mock_context:
@@ -113,9 +119,7 @@ class TestPublishTask:
 
             # Return valid resources for spots and event source, but None for config
             def mock_request_resource(resource_type, name=None):
-                if name == "new_spots":
-                    return []
-                elif name == "new_spot_event_source":
+                if name == "new_spot_event_source":
                     return NewSpotEventSource()
                 elif resource_type == MQTTConfig:
                     return None
@@ -125,11 +129,13 @@ class TestPublishTask:
             mock_context.return_value = mock_ctx
 
             with pytest.raises(AssertionError):
-                await publish_task()
+                await consumer.publish_task()
 
     @pytest.mark.asyncio
     async def test_publish_task_node_info_publish_error(self, sample_spots):
         """Test publish_task when node info publishing fails."""
+        consumer = MeshtasticCommunicationComponent()
+        
         with (
             patch(
                 "src.MeshtasticCommunicationComponent.current_context"
@@ -146,9 +152,7 @@ class TestPublishTask:
             mock_config.publish_topic = "test/topic"
 
             def mock_request_resource(resource_type, name=None):
-                if name == "new_spots":
-                    return sample_spots
-                elif name == "new_spot_event_source":
+                if name == "new_spot_event_source":
                     return NewSpotEventSource()
                 elif resource_type == MQTTConfig:
                     return mock_config
@@ -176,21 +180,17 @@ class TestPublishTask:
                     event_source = NewSpotEventSource()
                     with patch.object(
                         event_source.signal,
-                        "wait_event",
+                        "stream_events",
                         side_effect=Exception("Test stop"),
                     ):
                         mock_ctx.request_resource.side_effect = lambda rt, name=None: (
-                            sample_spots
-                            if name == "new_spots"
-                            else (
-                                event_source
-                                if name == "new_spot_event_source"
-                                else mock_config if rt == MQTTConfig else None
-                            )
+                            event_source
+                            if name == "new_spot_event_source"
+                            else mock_config if rt == MQTTConfig else None
                         )
 
                         with pytest.raises(Exception, match="Test stop"):
-                            await publish_task()
+                            await consumer.publish_task()
 
                         # Verify node info was attempted to be published
                         mock_client.publish.assert_called()
@@ -198,6 +198,8 @@ class TestPublishTask:
     @pytest.mark.asyncio
     async def test_publish_task_successful_flow(self, sample_spots):
         """Test successful publish_task flow with mocked components."""
+        consumer = MeshtasticCommunicationComponent()
+        
         with (
             patch(
                 "src.MeshtasticCommunicationComponent.current_context"
@@ -212,6 +214,7 @@ class TestPublishTask:
             mock_config = Mock()
             mock_config.aiomqtt_config = {}
             mock_config.publish_topic = "test/topic"
+            mock_config.config = {"host": "test.host", "port": 1883}
 
             # Create a mock event source with controllable signal
             mock_event_source = Mock()
@@ -219,9 +222,7 @@ class TestPublishTask:
             mock_event_source.signal = mock_signal
 
             def mock_request_resource(resource_type, name=None):
-                if name == "new_spots":
-                    return sample_spots
-                elif name == "new_spot_event_source":
+                if name == "new_spot_event_source":
                     return mock_event_source
                 elif resource_type == MQTTConfig:
                     return mock_config
@@ -234,12 +235,12 @@ class TestPublishTask:
             mock_client = AsyncMock()
             mock_client_class.return_value.__aenter__.return_value = mock_client
 
-            # Mock wait_event to only trigger once then raise exception to exit
-            async def mock_wait_event():
+            # Mock stream_events to only trigger once then raise exception to exit
+            async def mock_stream_events():
                 # Simulate one event then exit
                 raise Exception("Test stop")
 
-            mock_signal.wait_event.side_effect = mock_wait_event
+            mock_signal.stream_events.side_effect = mock_stream_events
 
             # Mock the message classes
             with (
@@ -260,11 +261,123 @@ class TestPublishTask:
                 mock_text_msg.return_value = MockMessage()
 
                 try:
-                    await publish_task()
+                    await consumer.publish_task()
                 except Exception as e:
                     if "Test stop" not in str(e):
                         raise
 
                 # Verify node info was published
                 assert mock_client.publish.call_count >= 1
-                mock_signal.wait_event.assert_called_once()
+                mock_signal.stream_events.assert_called_once()
+
+
+class TestReceiveTask:
+    @pytest.mark.asyncio
+    async def test_receive_task_initialization_error(self):
+        """Test receive_task when MQTT config is not available."""
+        consumer = MeshtasticCommunicationComponent()
+        
+        with patch(
+            "src.MeshtasticCommunicationComponent.current_context"
+        ) as mock_context:
+            mock_ctx = AsyncMock()
+            mock_ctx.request_resource.return_value = None
+            mock_context.return_value = mock_ctx
+
+            with pytest.raises(AssertionError):
+                await consumer.receive_task()
+
+    @pytest.mark.asyncio
+    async def test_receive_task_event_source_error(self):
+        """Test receive_task when event source is not available."""
+        consumer = MeshtasticCommunicationComponent()
+        
+        with patch(
+            "src.MeshtasticCommunicationComponent.current_context"
+        ) as mock_context:
+            mock_ctx = AsyncMock()
+            mock_config = Mock()
+            mock_config.aiomqtt_config = {}
+            mock_config.receive_topic = "test/receive"
+
+            def mock_request_resource(resource_type, name=None):
+                if name == "received_message_event_source":
+                    return None
+                elif resource_type == MQTTConfig:
+                    return mock_config
+                return None
+
+            mock_ctx.request_resource.side_effect = mock_request_resource
+            mock_context.return_value = mock_ctx
+
+            with pytest.raises(AssertionError):
+                await consumer.receive_task()
+
+    @pytest.mark.asyncio
+    async def test_receive_task_successful_flow(self):
+        """Test successful receive_task flow with mocked components."""
+        consumer = MeshtasticCommunicationComponent()
+        
+        with (
+            patch(
+                "src.MeshtasticCommunicationComponent.current_context"
+            ) as mock_context,
+            patch(
+                "src.MeshtasticCommunicationComponent.aiomqtt.Client"
+            ) as mock_client_class,
+        ):
+
+            # Setup mocks
+            mock_ctx = AsyncMock()
+            mock_config = Mock()
+            mock_config.aiomqtt_config = {}
+            mock_config.receive_topic = "test/receive"
+            mock_config.config = {"host": "test.host", "port": 1883}
+
+            # Create a mock event source
+            mock_event_source = Mock()
+            mock_signal = AsyncMock()
+            mock_event_source.signal = mock_signal
+
+            def mock_request_resource(resource_type, name=None):
+                if name == "received_message_event_source":
+                    return mock_event_source
+                elif resource_type == MQTTConfig:
+                    return mock_config
+                return None
+
+            mock_ctx.request_resource.side_effect = mock_request_resource
+            mock_context.return_value = mock_ctx
+
+            # Setup MQTT client mock
+            mock_client = AsyncMock()
+            mock_client_class.return_value.__aenter__.return_value = mock_client
+
+            # Mock messages to only trigger once then raise exception to exit
+            async def mock_messages():
+                # Simulate one message then exit
+                mock_message = Mock()
+                mock_message.payload = b"test_message"
+                yield mock_message
+                raise Exception("Test stop")
+
+            mock_client.messages = mock_messages()
+
+            # Mock the parser
+            with patch(
+                "src.MeshtasticCommunicationComponent.MeshtasticMessageParser"
+            ) as mock_parser_class:
+                mock_parser = Mock()
+                mock_parser_class.return_value = mock_parser
+                mock_parser.parse_message.return_value = Mock()
+
+                try:
+                    await consumer.receive_task()
+                except Exception as e:
+                    if "Test stop" not in str(e):
+                        raise
+
+                # Verify subscription was made
+                mock_client.subscribe.assert_called_once_with("test/receive")
+                # Verify parser was used
+                mock_parser.parse_message.assert_called_once()

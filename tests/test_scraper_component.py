@@ -118,7 +118,7 @@ class TestScraperComponent:
             await scraper.start(mock_ctx)
 
             # Verify resources are added
-            assert mock_ctx.add_resource.call_count == 3
+            assert mock_ctx.add_resource.call_count == 2
             calls = mock_ctx.add_resource.call_args_list
 
             # Check that NewSpotEventSource is added
@@ -126,11 +126,6 @@ class TestScraperComponent:
             # Check that spots dict is added
             assert any(
                 call[0][0] == {} and call[1].get("name") == "spots" for call in calls
-            )
-            # Check that new_spots list is added
-            assert any(
-                call[0][0] == [] and call[1].get("name") == "new_spots"
-                for call in calls
             )
 
             # Verify task group is started

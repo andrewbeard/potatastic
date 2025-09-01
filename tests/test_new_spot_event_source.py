@@ -21,9 +21,24 @@ class TestNewSpotEventSource:
     async def test_signal_dispatch(self):
         """Test that the signal can be dispatched."""
         event_source = NewSpotEventSource()
+        
+        # Create a mock spot for testing
+        from src.Spot import Spot
+        mock_spot_data = {
+            "activator": "W1ABC",
+            "frequency": "14.230",
+            "grid4": "FN42",
+            "mode": "CW",
+            "name": "Test Spot",
+            "reference": "K-0001",
+            "spotId": 12345,
+            "spotter": "W2XYZ",
+            "spotTime": "2024-01-15T14:30:00",
+        }
+        spot = Spot(mock_spot_data)
 
         # This should not raise an exception when run in async context
-        await event_source.signal.dispatch()
+        await event_source.signal.dispatch(spot=spot)
 
     @pytest.mark.asyncio
     async def test_signal_wait_event(self):
@@ -31,11 +46,26 @@ class TestNewSpotEventSource:
         import asyncio
 
         event_source = NewSpotEventSource()
+        
+        # Create a mock spot for testing
+        from src.Spot import Spot
+        mock_spot_data = {
+            "activator": "W1ABC",
+            "frequency": "14.230",
+            "grid4": "FN42",
+            "mode": "CW",
+            "name": "Test Spot",
+            "reference": "K-0001",
+            "spotId": 12345,
+            "spotter": "W2XYZ",
+            "spotTime": "2024-01-15T14:30:00",
+        }
+        spot = Spot(mock_spot_data)
 
         # Create a task that will dispatch the signal after a short delay
         async def dispatch_after_delay():
             await asyncio.sleep(0.01)
-            event_source.signal.dispatch()
+            event_source.signal.dispatch(spot=spot)
 
         # Start the dispatch task
         dispatch_task = asyncio.create_task(dispatch_after_delay())

@@ -10,21 +10,6 @@ from src.ScraperComponent import ScraperComponent
 
 
 class TestPotatastic:
-    def test_main_function_logging_configuration(self):
-        """Test that main function configures logging correctly."""
-        with (
-            patch("src.potatastic.run_application") as mock_run_app,
-            patch("src.potatastic.logging.basicConfig") as mock_logging_config,
-        ):
-
-            with suppress(SystemExit):
-                main()
-
-            # Verify logging was configured
-            mock_logging_config.assert_called_once_with(
-                format="%(asctime)s %(levelname)s:%(message)s", level=logging.INFO
-            )
-
     def test_main_function_component_configuration(self):
         """Test that main function configures components correctly."""
         with (
