@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from meshage.config import MQTTConfig
 
-from src.MeshtasticConsumerComponent import MeshtasticCommunicationComponent, publish_task, receive_task
+from src.MeshtasticCommunicationComponent import MeshtasticCommunicationComponent, publish_task, receive_task
 from src.NewSpotEventSource import NewSpotEventSource
 from src.Spot import Spot
 
@@ -23,7 +23,7 @@ class TestMeshtasticCommunicationComponent:
         mock_ctx = Mock()
 
         with patch(
-            "src.MeshtasticConsumerComponent.anyio.create_task_group"
+            "src.MeshtasticCommunicationComponent.anyio.create_task_group"
         ) as mock_task_group_factory:
             mock_task_group = AsyncMock()
             # Make start_soon a regular mock to avoid coroutine warnings
@@ -85,7 +85,7 @@ class TestPublishTask:
     @pytest.mark.asyncio
     async def test_publish_task_initialization_error(self):
         """Test publish_task when resources are not available."""
-        with patch("src.MeshtasticConsumerComponent.current_context") as mock_context:
+        with patch("src.MeshtasticCommunicationComponent.current_context") as mock_context:
             mock_ctx = AsyncMock()
             mock_ctx.request_resource.return_value = None
             mock_context.return_value = mock_ctx
@@ -96,7 +96,7 @@ class TestPublishTask:
     @pytest.mark.asyncio
     async def test_publish_task_mqtt_config_error(self):
         """Test publish_task when MQTT config is not available."""
-        with patch("src.MeshtasticConsumerComponent.current_context") as mock_context:
+        with patch("src.MeshtasticCommunicationComponent.current_context") as mock_context:
             mock_ctx = AsyncMock()
 
             # Return valid resources for spots and event source, but None for config
@@ -119,9 +119,9 @@ class TestPublishTask:
     async def test_publish_task_node_info_publish_error(self, sample_spots):
         """Test publish_task when node info publishing fails."""
         with (
-            patch("src.MeshtasticConsumerComponent.current_context") as mock_context,
+            patch("src.MeshtasticCommunicationComponent.current_context") as mock_context,
             patch(
-                "src.MeshtasticConsumerComponent.aiomqtt.Client"
+                "src.MeshtasticCommunicationComponent.aiomqtt.Client"
             ) as mock_client_class,
         ):
 
@@ -150,7 +150,7 @@ class TestPublishTask:
 
             # Mock the message classes
             with patch(
-                "src.MeshtasticConsumerComponent.MeshtasticNodeInfoMessage"
+                "src.MeshtasticCommunicationComponent.MeshtasticNodeInfoMessage"
             ) as mock_node_info:
                 mock_node_info.return_value = Mock()
 
@@ -185,9 +185,9 @@ class TestPublishTask:
     async def test_publish_task_successful_flow(self, sample_spots):
         """Test successful publish_task flow with mocked components."""
         with (
-            patch("src.MeshtasticConsumerComponent.current_context") as mock_context,
+            patch("src.MeshtasticCommunicationComponent.current_context") as mock_context,
             patch(
-                "src.MeshtasticConsumerComponent.aiomqtt.Client"
+                "src.MeshtasticCommunicationComponent.aiomqtt.Client"
             ) as mock_client_class,
         ):
 
@@ -228,10 +228,10 @@ class TestPublishTask:
             # Mock the message classes
             with (
                 patch(
-                    "src.MeshtasticConsumerComponent.MeshtasticNodeInfoMessage"
+                    "src.MeshtasticCommunicationComponent.MeshtasticNodeInfoMessage"
                 ) as mock_node_info,
                 patch(
-                    "src.MeshtasticConsumerComponent.MeshtasticTextMessage"
+                    "src.MeshtasticCommunicationComponent.MeshtasticTextMessage"
                 ) as mock_text_msg,
             ):
 
