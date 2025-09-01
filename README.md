@@ -8,5 +8,5 @@ Publishes [POTA](https://parksontheair.com/index.html) spots to Meshtastic via M
 - Create a channel and note the name and encryption key
 - Configure your publishing node to use your MQTT server for bridging messages.
 - Create an mqtt.conf file according to the meshage library, including the address and credentials of your MQTT server and the details of the channel you created.
-- Start the [Docker image](https://hub.docker.com/r/bearda/potatastic), mounting the config file to /app/mqtt.c onf
+- Start the [Docker image](https://hub.docker.com/r/bearda/potatastic), mounting the config file to /app/mqtt.conf
 
