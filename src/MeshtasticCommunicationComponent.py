@@ -5,6 +5,7 @@ import anyio
 from asphalt.core import Component, current_context
 from meshage.config import MQTTConfig
 from meshage.messages import MeshtasticNodeInfoMessage, MeshtasticTextMessage
+from meshage.parser import MeshtasticMessageParser
 
 from .NewSpotEventSource import NewSpotEventSource
 from .ReceivedMessageEventSource import ReceivedMessageEventSource
@@ -57,11 +58,14 @@ async def receive_task() -> None:
 
     logging.debug(f"Receive connecting to {config.config["host"]}")
     async with aiomqtt.Client(**config.aiomqtt_config) as broker:
+        parser = MeshtasticMessageParser(config)
         logging.debug(f"Receive connected to broker")
         await broker.subscribe(config.receive_topic)
         logging.debug("Subscribed to receive topic")
         async for message in broker.messages:
-            logging.debug(f"Received message: {message.payload}")
+            parsed_message = parser.parse_message(message.payload)
+            if isinstance(parsed_message, MeshtasticTextMessage):
+                logging.info(f"Received text message: {parsed_message.text}")
 
 
 class MeshtasticCommunicationComponent(Component):
